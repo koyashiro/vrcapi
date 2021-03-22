@@ -85,6 +85,7 @@ export class VrcApiRepository {
     if (!response.ok) {
       console.log(request);
       console.log(response);
+      console.log(await response.json());
       throw new Error("Response is not ok.");
     }
 

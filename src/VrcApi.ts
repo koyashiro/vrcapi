@@ -42,27 +42,27 @@ export class VrcApi {
     }
 
     const config = await this._repository.get<Config>("config");
-    this._apiKey = config.clientApiKey;
+    const apiKey = config.apiKey;
 
     const [currentUser, authToken] = await this._repository.getWithBasic<
       CurrentUser
     >(
       "auth/user",
-      this._apiKey,
+      apiKey,
       username,
       password,
     );
-    this._authToken = authToken;
 
     if (currentUser.requiresTwoFactorAuth) {
       if (!code) {
         console.log("Require Two-Factor Authentication.");
         return false;
       }
+
       const verify = await vrcApiRepository.postWithAuthToken<Verify>(
         "auth/twofactorauth/totp/verify",
-        this._apiKey,
-        this._authToken,
+        apiKey,
+        authToken,
         JSON.stringify({ code }),
       );
       if (!verify.verified) {
@@ -71,6 +71,8 @@ export class VrcApi {
       }
     }
 
+    this._apiKey = config.clientApiKey;
+    this._authToken = authToken;
     this._isLoggedIn = true;
     return true;
   }
