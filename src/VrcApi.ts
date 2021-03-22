@@ -1,5 +1,5 @@
 import { VrcApiRepository } from "./VrcApiRepository.ts";
-import { Config, CurrentUser, User, Verify } from "./interfaces/interfaces.ts";
+import { Config, CurrentUser, User, Verify } from "./interfaces/mod.ts";
 
 export const baseUrl = "https://vrchat.com/api/1/";
 const vrcApiRepository = new VrcApiRepository(baseUrl);

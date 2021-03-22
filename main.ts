@@ -1,5 +1,5 @@
-import { VrcApi } from "./src/vrcapi.ts";
-import { CurrentUser, User } from "./src/interfaces/interfaces.ts";
+import { VrcApi } from "./src/mod.ts";
+import { CurrentUser, User } from "./src/mod.ts";
 import { parse } from "https://deno.land/std@0.91.0/flags/mod.ts";
 
 const vrcApi = new VrcApi();
