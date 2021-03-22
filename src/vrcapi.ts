@@ -1,48 +1,143 @@
-import { User, VrcApiRepository } from "./VrcApiRepository.ts";
-import { getBasicString } from "./util.ts";
+import { VrcApiRepository } from "./VrcApiRepository.ts";
+import { Config, CurrentUser, User, Verify } from "./interfaces/interfaces.ts";
 
-export const baseUrl = "https://vrchat.com/api/1";
+export const baseUrl = "https://vrchat.com/api/1/";
 const vrcApiRepository = new VrcApiRepository(baseUrl);
 
-export async function login(
-  username: string,
-  password: string,
-  code?: string,
-): Promise<VrcApiSession> {
-  const config = await vrcApiRepository.getConfig();
-  const apiKey = config.clientApiKey;
+export class VrcApi {
+  private readonly _repository: VrcApiRepository;
+  private _apiKey?: string;
+  private _authToken?: string;
+  private _isLoggedIn: boolean;
 
-  const basic = getBasicString(username, password);
-
-  const [user, authToken] = await vrcApiRepository.getUserWithBasic(
-    basic,
-    apiKey,
-  );
-
-  if (user.requiresTwoFactorAuth) {
-    if (!code) {
-      throw new Error("Require two factor auth.");
+  constructor(repository?: VrcApiRepository) {
+    if (!repository) {
+      this._repository = vrcApiRepository;
+    } else {
+      this._repository = repository;
     }
-    const verify = await vrcApiRepository.postVerify(
-      { apiKey, authToken },
-      code,
-    );
-    if (!verify.verified) {
-      throw new Error("Two-factor Authentication error.");
-    }
+
+    this._isLoggedIn = false;
   }
 
-  const session: VrcApiSession = { apiKey, authToken };
+  public get apiKey() {
+    return this._apiKey;
+  }
 
-  return session;
-}
+  public get authToken() {
+    return this._authToken;
+  }
 
-export async function getUser(session: VrcApiSession): Promise<User> {
-  const user = await vrcApiRepository.getUser(session);
-  return user;
-}
+  public get isLoggedIn() {
+    return this._isLoggedIn;
+  }
 
-export interface VrcApiSession {
-  apiKey: string;
-  authToken: string;
+  public async login(
+    username: string,
+    password: string,
+    code?: string,
+  ): Promise<boolean> {
+    if (this._isLoggedIn) {
+      return true;
+    }
+
+    const config = await this._repository.get<Config>("config");
+    this._apiKey = config.clientApiKey;
+
+    const [currentUser, authToken] = await this._repository.getWithBasic<
+      CurrentUser
+    >(
+      "auth/user",
+      this._apiKey,
+      username,
+      password,
+    );
+    this._authToken = authToken;
+
+    if (currentUser.requiresTwoFactorAuth) {
+      if (!code) {
+        console.log("Require Two-Factor Authentication.");
+        return false;
+      }
+      const verify = await vrcApiRepository.postWithAuthToken<Verify>(
+        "auth/twofactorauth/totp/verify",
+        this._apiKey,
+        this._authToken,
+        JSON.stringify({ code }),
+      );
+      if (!verify.verified) {
+        console.log("Two-Factor Authentication error.");
+        return false;
+      }
+    }
+
+    this._isLoggedIn = true;
+    return true;
+  }
+
+  public async loadAuthToken(authToken: string): Promise<boolean> {
+    this._apiKey = undefined;
+    this._authToken = undefined;
+    this._isLoggedIn = false;
+
+    if (!authToken) {
+      return false;
+    }
+
+    const config = await this._repository.get<Config>("config");
+
+    const user = await this._repository.getWithAuthToken<CurrentUser>(
+      "auth/user",
+      config.clientApiKey,
+      authToken,
+    );
+
+    if (user.requiresTwoFactorAuth) {
+      return false;
+    }
+
+    this._apiKey = config.clientApiKey;
+    this._authToken = authToken;
+    this._isLoggedIn = true;
+    return true;
+  }
+
+  public async getCurrentUser(): Promise<CurrentUser> {
+    if (!this._isLoggedIn) {
+      throw new Error();
+    }
+
+    const currentUser = await vrcApiRepository.getWithAuthToken<CurrentUser>(
+      "auth/user",
+      this._apiKey!,
+      this._authToken!,
+    );
+    return currentUser;
+  }
+
+  public async getUser(id: string): Promise<User> {
+    if (!this._isLoggedIn) {
+      throw new Error();
+    }
+
+    const user = await vrcApiRepository.getWithAuthToken<User>(
+      `users/${id}`,
+      this._apiKey!,
+      this._authToken!,
+    );
+    return user;
+  }
+
+  public async getFriends(): Promise<User[]> {
+    if (!this._isLoggedIn) {
+      throw new Error();
+    }
+
+    const users = await vrcApiRepository.getWithAuthToken<User[]>(
+      "auth/user/friends",
+      this._apiKey!,
+      this._authToken!,
+    );
+    return users;
+  }
 }

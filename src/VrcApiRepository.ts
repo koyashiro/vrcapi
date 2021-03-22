@@ -1,39 +1,54 @@
+import { encode } from "https://deno.land/std/encoding/base64.ts";
 import { getAuthToken } from "./util.ts";
 
 export class VrcApiRepository {
-  public readonly baseUrl: string;
+  public readonly baseUrl: URL;
 
-  constructor(baseUrl: string) {
-    this.baseUrl = baseUrl;
+  constructor(baseUrl: string | URL) {
+    if (typeof baseUrl === "string") {
+      this.baseUrl = new URL(baseUrl);
+    } else {
+      this.baseUrl = baseUrl;
+    }
   }
 
-  public async getConfig(): Promise<Config> {
-    const url = `${this.baseUrl}/config`;
+  public async get<T>(relativeUrl: string): Promise<T> {
+    const url = new URL(relativeUrl, this.baseUrl);
 
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error("Response is not ok.");
     }
 
-    const config = await response.json() as Config;
-    return config;
+    const value = await response.json() as T;
+    return value;
   }
 
-  public async getUserWithBasic(
-    basic: string,
+  public async getWithBasic<T>(
+    relativeUrl: string,
     apiKey: string,
-  ): Promise<[auth: User, authToken: string]> {
-    const url = `${this.baseUrl}/auth/user`;
+    username: string,
+    password: string,
+  ): Promise<[value: T, authToken: string]> {
+    const url = new URL(relativeUrl, this.baseUrl);
+    url.searchParams.append("apiKey", apiKey);
+
+    const credential = encode(`${username}:${password}`);
+    const basic = `Basic ${credential}`;
 
     const headers = new Headers();
-    headers.set("Authorization", basic);
+    headers.set("authorization", basic);
 
-    const response = await fetch(`${url}?apiKey=${apiKey}`, {
+    const response = await fetch(url, {
       method: "GET",
       headers,
     });
 
-    const user = await response.json() as User;
+    if (!response.ok) {
+      throw new Error("Response is not ok.");
+    }
+
+    const value = await response.json() as T;
 
     const cookie = response.headers.get("set-cookie");
     if (!cookie) {
@@ -41,48 +56,54 @@ export class VrcApiRepository {
     }
 
     const authToken = getAuthToken(cookie);
-    return [user, authToken];
+
+    return [value, authToken];
   }
 
-  public async postVerify(
-    session: { apiKey: string; authToken: string },
-    code: string,
-  ): Promise<Verify> {
-    const url = `${this.baseUrl}/auth/twofactorauth/totp/verify`;
-    const cookie = `auth=${session.authToken}`;
-
-    const body = JSON.stringify({ code });
+  public async postWithAuthToken<T>(
+    relativeUrl: string,
+    apiKey: string,
+    authToken: string,
+    body: string,
+  ): Promise<T> {
+    const url = new URL(relativeUrl, this.baseUrl);
+    url.searchParams.append("apiKey", apiKey);
 
     const headers = new Headers();
-    headers.set("Cookie", cookie);
-    headers.set("Content-Type", "application/json");
-    headers.set("Content-Length", body.length.toString());
+    headers.set("cookie", `auth=${authToken}`);
+    headers.set("content-type", "application/json");
+    headers.set("content-length", body.length.toString());
 
-    const response = await fetch(`${url}?apiKey=${session.apiKey}`, {
+    const request = {
       method: "POST",
-      credentials: "include",
       headers,
       body,
-    });
+    };
+
+    const response = await fetch(url, request);
 
     if (!response.ok) {
+      console.log(request);
+      console.log(response);
       throw new Error("Response is not ok.");
     }
 
-    const verify = await response.json() as Verify;
-    return verify;
+    const value = await response.json() as T;
+    return value;
   }
 
-  public async getUser(
-    session: { apiKey: string; authToken: string },
-  ): Promise<User> {
-    const url = `${this.baseUrl}/auth/user`;
-    const cookie = `auth=${session.authToken}`;
+  public async getWithAuthToken<T>(
+    relativeUrl: string,
+    apiKey: string,
+    authToken: string,
+  ): Promise<T> {
+    const url = new URL(relativeUrl, this.baseUrl);
+    url.searchParams.append("apiKey", apiKey);
 
     const headers = new Headers();
-    headers.set("Cookie", cookie);
+    headers.set("cookie", `auth=${authToken}`);
 
-    const response = await fetch(`${url}?apiKey=${session.apiKey}`, {
+    const response = await fetch(url, {
       method: "GET",
       headers,
     });
@@ -91,170 +112,7 @@ export class VrcApiRepository {
       throw new Error("Response is not ok.");
     }
 
-    const user = await response.json() as User;
-
-    return user;
+    const value = await response.json() as T;
+    return value;
   }
-}
-
-export interface Config {
-  messageOfTheDay: string;
-  events: {
-    distanceClose: number;
-    distanceFactor: number;
-    distanceFar: number;
-    groupDistance: number;
-    maximumBunchSize: number;
-    notVisibleFactor: number;
-    playerOrderBucketSize: number;
-    playerOrderFactor: number;
-    slowUpdateFactorThreshold: number;
-    viewSegmentLength: number;
-  };
-  "dis-countdown": Date;
-  homepageRedirectTarget: string;
-  "youtubedl-hash": string;
-  "youtubedl-version": string;
-  timeOutWorldId: string;
-  gearDemoRoomId: string;
-  releaseServerVersionStandalone: string;
-  downloadLinkWindows: string;
-  releaseAppVersionStandalone: string;
-  devAppVersionStandalone: string;
-  devServerVersionStandalone: string;
-  devDownloadLinkWindows: string;
-  currentTOSVersion: number;
-  releaseSdkUrl: string;
-  releaseSdkVersion: string;
-  devSdkUrl: string;
-  devSdkVersion: string;
-  whiteListedAssetUrls: string[];
-  clientApiKey: string;
-  viveWindowsUrl: string;
-  sdkUnityVersion: string;
-  hubWorldId: string;
-  homeWorldId: string;
-  tutorialWorldId: string;
-  disableEventStream: boolean;
-  disableAvatarGating: boolean;
-  disableFeedbackGating: boolean;
-  disableRegistration: boolean;
-  disableUpgradeAccount: boolean;
-  disableCommunityLabs: boolean;
-  disableCommunityLabsPromotion: boolean;
-  disableTwoFactorAuth: boolean;
-  disableSteamNetworking: boolean;
-  disableHello: boolean;
-  disableUdon: boolean;
-  plugin: string;
-  sdkNotAllowedToPublishMessage: string;
-  sdkDeveloperFaqUrl: string;
-  sdkDiscordUrl: string;
-  notAllowedToSelectAvatarInPrivateWorldMessage: string;
-  userVerificationTimeout: number;
-  userUpdatePeriod: number;
-  userVerificationDelay: number;
-  userVerificationRetry: number;
-  worldUpdatePeriod: number;
-  moderationQueryPeriod: number;
-  clientDisconnectTimeout: number;
-  defaultAvatar: string;
-  dynamicWorldRows: {
-    name: string;
-    sortHeading: string;
-    sortOwnership: string;
-    sortOrder: string;
-    platform: string;
-    index: number;
-    tag: string;
-  }[];
-  disableAvatarCopying: boolean;
-  announcements: {
-    name: string;
-    text: string;
-  }[];
-  urlList: string[];
-  useReliableUdpForVoice: boolean;
-  updateRateMsMaximum: number;
-  updateRateMsMinimum: number;
-  updateRateMsNormal: number;
-  clientBPSCeiling: number;
-  clientReservedPlayerBPS: number;
-  clientSentCountAllowance: number;
-  uploadAnalysisPercent: number;
-  downloadUrls: {
-    sdk2: string;
-    "sdk3-worlds": string;
-    "sdk3-avatars": string;
-  };
-  address: string;
-  contactEmail: string;
-  supportEmail: string;
-  jobsEmail: string;
-  copyrightEmail: string;
-  moderationEmail: string;
-  disableEmail: boolean;
-  appName: string;
-  serverName: string;
-  deploymentGroup: string;
-  buildVersionTag: string;
-  apiKey: string;
-}
-
-export interface User {
-  id: string;
-  username: string;
-  displayName: string;
-  userIcon: string;
-  bio: string;
-  bioLinks: string[];
-  pastDisplayNames: {
-    displayName: string;
-    updated_at: Date;
-  }[];
-  hasEmail: boolean;
-  hasPendingEmail: boolean;
-  email: string;
-  obfuscatedEmail: string;
-  obfuscatedPendingEmail: string;
-  emailVerified: boolean;
-  hasBirthday: boolean;
-  unsubscribe: boolean;
-  friends: string[];
-  friendGroupNames: any[];
-  currentAvatarImageUrl: string;
-  currentAvatarThumbnailImageUrl: string;
-  fallbackAvatar: string;
-  currentAvatar: string;
-  currentAvatarAssetUrl: string;
-  accountDeletionDate?: any;
-  acceptedTOSVersion: number;
-  steamId: string;
-  steamDetails: {};
-  oculusId: string;
-  hasLoggedInFromClient: boolean;
-  homeLocation: string;
-  twoFactorAuthEnabled: boolean;
-  feature: {
-    twoFactorAuth: boolean;
-  };
-  status: string;
-  statusDescription: string;
-  state: string;
-  tags: string[];
-  developerType: string;
-  last_login: Date;
-  last_platform: string;
-  allowAvatarCopying: boolean;
-  date_joined: string;
-  isFriend: boolean;
-  friendKey: string;
-  onlineFriends: string[];
-  activeFriends: string[];
-  offlineFriends: string[];
-  requiresTwoFactorAuth?: string[];
-}
-
-export interface Verify {
-  verified: boolean;
 }

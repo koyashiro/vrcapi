@@ -1,24 +1,36 @@
-import { login } from "./src/vrcapi.ts";
-import { getUser, VrcApiSession } from "./src/vrcapi.ts";
+import { VrcApi } from "./src/vrcapi.ts";
+import { CurrentUser, User } from "./src/interfaces/interfaces.ts";
+import { parse } from "https://deno.land/std@0.91.0/flags/mod.ts";
 
-const username = "";
-const password = "";
-const code = "";
+const vrcApi = new VrcApi();
+const args = parse(Deno.args);
 
-let session: VrcApiSession;
+const username = args["username"];
+const password = args["password"];
+const code = args["code"];
+const authToken = args["auth-token"];
 
-try {
-  session = await login(username, password, code);
-  console.log(session);
-} catch (e) {
-  console.log(e);
-  Deno.exit(-1);
+if (username && password) {
+  const result = await vrcApi.login(username, password, code);
+  if (!result) {
+    console.log("Login failed");
+    Deno.exit(1);
+  }
+} else if (authToken) {
+  const result = await vrcApi.loadAuthToken(authToken);
+  if (!result) {
+    console.log("Load failed");
+    Deno.exit(1);
+  }
+} else {
+  Deno.exit(1);
 }
 
-try {
-  const user = await getUser(session);
-  console.log(user);
-} catch (e) {
-  console.log(e);
-  Deno.exit(-1);
-}
+const currentUser: CurrentUser = await vrcApi.getCurrentUser();
+console.log(currentUser);
+
+const friends: User[] = await vrcApi.getFriends();
+console.log(friends);
+
+const user = await vrcApi.getUser(friends[0].id);
+console.log(user);
