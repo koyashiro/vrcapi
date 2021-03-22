@@ -1,4 +1,4 @@
-import { login, loginWithAuthToken } from "./src/mod.ts";
+import { login, loginWithAuthToken } from "./mod.ts";
 import { parse } from "https://deno.land/std@0.91.0/flags/mod.ts";
 
 const args = parse(Deno.args);

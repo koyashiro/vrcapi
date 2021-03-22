@@ -3,7 +3,7 @@
 ## Usage
 
 ```typescript
-import { login } from "https://github.com/KoyashiroKohaku/vrcapi/blob/master/src/mod.ts";
+import { login } from "https://raw.githubusercontent.com/KoyashiroKohaku/vrcapi/master/mod.ts";
 
 const username = "foo";
 const password = "bar";
