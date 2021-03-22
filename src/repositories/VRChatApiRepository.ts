@@ -1,7 +1,7 @@
 import { encode } from "https://deno.land/std/encoding/base64.ts";
-import { getAuthToken } from "./util.ts";
+import { getAuthToken } from "../util.ts";
 
-export class VrcApiRepository {
+export class VRChatApiRepository {
   public readonly baseUrl: URL;
 
   constructor(baseUrl: string | URL) {
