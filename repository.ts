@@ -1,6 +1,28 @@
-import { encode } from "https://deno.land/std/encoding/base64.ts";
-import { getAuthToken } from "../util.ts";
-import { ApiRepository } from "./ApiRepository.ts";
+import { getAuthToken, getBasicString } from "./util.ts";
+
+export interface ApiRepository {
+  get<T>(relativeUrl: string): Promise<T>;
+
+  getWithBasic<T>(
+    relativeUrl: string,
+    apiKey: string,
+    username: string,
+    password: string,
+  ): Promise<[value: T, authToken: string]>;
+
+  postWithAuthToken<T>(
+    relativeUrl: string,
+    apiKey: string,
+    authToken: string,
+    body: string,
+  ): Promise<T>;
+
+  getWithAuthToken<T>(
+    relativeUrl: string,
+    apiKey: string,
+    authToken: string,
+  ): Promise<T>;
+}
 
 export class VRChatApiRepository implements ApiRepository {
   readonly baseUrl: URL;
@@ -34,7 +56,7 @@ export class VRChatApiRepository implements ApiRepository {
     const url = new URL(relativeUrl, this.baseUrl);
     url.searchParams.append("apiKey", apiKey);
 
-    const credential = encode(`${username}:${password}`);
+    const credential = getBasicString(username, password);
     const basic = `Basic ${credential}`;
 
     const headers = new Headers();

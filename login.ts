@@ -1,3 +1,8 @@
+import { VRChatApiRepository } from "./repository.ts";
+import { CurrentUser } from "./user.ts";
+import { VRChatApiClient } from "./client.ts";
+import { BASE_URL } from "./util.ts";
+
 export interface Config {
   messageOfTheDay: string;
   events: {
@@ -101,3 +106,52 @@ export interface Config {
   buildVersionTag: string;
   apiKey: string;
 }
+
+export interface Verify {
+  verified: boolean;
+}
+
+const repository = new VRChatApiRepository(BASE_URL);
+
+export async function login(
+  username: string,
+  password: string,
+  code?: string,
+) {
+  const config = await repository.get<Config>("config");
+  const apiKey = config.apiKey;
+
+  const [currentUser, authToken] = await repository.getWithBasic<
+    CurrentUser
+  >(
+    "auth/user",
+    apiKey,
+    username,
+    password,
+  );
+
+  if (currentUser.requiresTwoFactorAuth) {
+    if (!code) {
+      throw new Error("Require Two-Factor Authentication.");
+    }
+
+    const verify = await repository.postWithAuthToken<Verify>(
+      "auth/twofactorauth/totp/verify",
+      apiKey,
+      authToken,
+      JSON.stringify({ code }),
+    );
+    if (!verify.verified) {
+      throw new Error("Two-Factor Authentication error.");
+    }
+  }
+
+  return new VRChatApiClient(apiKey, authToken, repository);
+}
+
+export const loginWithAuthToken = async (authToken: string) => {
+  const config = await repository.get<Config>("config");
+  const apiKey = config.apiKey;
+
+  return new VRChatApiClient(apiKey, authToken, repository);
+};

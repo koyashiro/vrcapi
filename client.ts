@@ -1,5 +1,5 @@
-import { UserApiClient } from "./UserApiClient.ts";
-import { ApiRepository } from "../repositories/ApiRepository.ts";
+import { ApiRepository } from "./repository.ts";
+import { UserApiClient } from "./user.ts";
 
 export class VRChatApiClient {
   readonly apiKey: string;

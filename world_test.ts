@@ -1,13 +1,15 @@
-import { WorldApiClient } from "../src/clients/WorldApiClient.ts";
-import { VRChatApiRepository } from "../src/repositories/VRChatApiRepository.ts";
 import {
   assert,
   assertEquals,
 } from "https://deno.land/std@0.91.0/testing/asserts.ts";
-import { apiKey, authToken, baseUrl } from "./utils.ts";
+import { WorldApiClient } from "./world.ts";
+import { VRChatApiRepository } from "./repository.ts";
+import { BASE_URL, getAuthTokenFromEnv } from "./util.ts";
 
-const repository = new VRChatApiRepository(baseUrl);
+const apiKey = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26";
+const authToken = getAuthTokenFromEnv();
 
+const repository = new VRChatApiRepository(BASE_URL);
 const client = new WorldApiClient(apiKey, authToken, repository);
 
 Deno.test("Get world by Id", async () => {
