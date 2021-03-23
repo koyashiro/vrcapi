@@ -14,7 +14,7 @@ const friends = await client.user.getFriends();
 console.log(friends);
 ```
 
-## Sample
+## Example
 
 ### Login
 
