@@ -3,7 +3,7 @@ import { getAuthToken } from "../util.ts";
 import { ApiRepository } from "./ApiRepository.ts";
 
 export class VRChatApiRepository implements ApiRepository {
-  public readonly baseUrl: URL;
+  readonly baseUrl: URL;
 
   constructor(baseUrl: string | URL) {
     if (typeof baseUrl === "string") {
@@ -13,7 +13,7 @@ export class VRChatApiRepository implements ApiRepository {
     }
   }
 
-  public async get<T>(relativeUrl: string): Promise<T> {
+  async get<T>(relativeUrl: string): Promise<T> {
     const url = new URL(relativeUrl, this.baseUrl);
 
     const response = await fetch(url);
@@ -25,7 +25,7 @@ export class VRChatApiRepository implements ApiRepository {
     return value;
   }
 
-  public async getWithBasic<T>(
+  async getWithBasic<T>(
     relativeUrl: string,
     apiKey: string,
     username: string,
@@ -61,7 +61,7 @@ export class VRChatApiRepository implements ApiRepository {
     return [value, authToken];
   }
 
-  public async postWithAuthToken<T>(
+  async postWithAuthToken<T>(
     relativeUrl: string,
     apiKey: string,
     authToken: string,
@@ -94,7 +94,7 @@ export class VRChatApiRepository implements ApiRepository {
     return value;
   }
 
-  public async getWithAuthToken<T>(
+  async getWithAuthToken<T>(
     relativeUrl: string,
     apiKey: string,
     authToken: string,

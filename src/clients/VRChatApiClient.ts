@@ -2,9 +2,9 @@ import { UserApiClient } from "./UserApiClient.ts";
 import { ApiRepository } from "../repositories/ApiRepository.ts";
 
 export class VRChatApiClient {
-  public readonly apiKey: string;
-  public readonly authToken: string;
-  public readonly user: UserApiClient;
+  readonly apiKey: string;
+  readonly authToken: string;
+  readonly user: UserApiClient;
 
   constructor(
     apiKey: string,

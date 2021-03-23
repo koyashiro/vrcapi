@@ -17,7 +17,7 @@ export class UserApiClient {
     this._repository = repository;
   }
 
-  public getCurrentUser(): Promise<CurrentUser> {
+  getCurrentUser(): Promise<CurrentUser> {
     return this._repository.getWithAuthToken<CurrentUser>(
       "auth/user",
       this._apiKey!,
@@ -25,7 +25,7 @@ export class UserApiClient {
     );
   }
 
-  public getUserById(id: string): Promise<User> {
+  getUserById(id: string): Promise<User> {
     return this._repository.getWithAuthToken<User>(
       `users/${id}`,
       this._apiKey!,
@@ -33,7 +33,7 @@ export class UserApiClient {
     );
   }
 
-  public getFriends(): Promise<User[]> {
+  getFriends(): Promise<User[]> {
     return this._repository.getWithAuthToken<User[]>(
       "auth/user/friends",
       this._apiKey!,
