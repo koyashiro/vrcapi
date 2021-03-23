@@ -1,16 +1,16 @@
-import { VRChatApiRepository } from "../repositories/VRChatApiRepository.ts";
+import { ApiRepository } from "../repositories/ApiRepository.ts";
 import { User } from "../interfaces/User.ts";
 import { CurrentUser } from "../interfaces/CurrentUser.ts";
 
 export class UserApiClient {
   private readonly _apiKey: string;
   private readonly _authToken: string;
-  private readonly _repository: VRChatApiRepository;
+  private readonly _repository: ApiRepository;
 
   constructor(
     apiKey: string,
     authToken: string,
-    repository: VRChatApiRepository,
+    repository: ApiRepository,
   ) {
     this._apiKey = apiKey;
     this._authToken = authToken;

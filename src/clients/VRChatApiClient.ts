@@ -1,5 +1,5 @@
 import { UserApiClient } from "./UserApiClient.ts";
-import { VRChatApiRepository } from "../repositories/VRChatApiRepository.ts";
+import { ApiRepository } from "../repositories/ApiRepository.ts";
 
 export class VRChatApiClient {
   private readonly _apiKey?: string;
@@ -9,7 +9,7 @@ export class VRChatApiClient {
   constructor(
     apiKey: string,
     authToken: string,
-    repository: VRChatApiRepository,
+    repository: ApiRepository,
   ) {
     this._apiKey = apiKey;
     this._authToken = authToken;
