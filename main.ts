@@ -16,7 +16,7 @@ if (username && password) {
 } else if (authToken) {
   const client = await loginWithAuthToken(authToken);
 
-  const currentUser = client.user.getCurrentUser();
+  const currentUser = await client.user.getCurrentUser();
   console.log(currentUser);
 
   const friends = await client.user.getFriends();
