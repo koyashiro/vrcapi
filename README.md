@@ -10,7 +10,8 @@ const password = "bar";
 
 const client = await login(username, password);
 
-const friends = client.user.getFriends();
+const friends = await client.user.getFriends();
+console.log(friends);
 ```
 
 ## Sample
