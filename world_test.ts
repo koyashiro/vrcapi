@@ -4,9 +4,9 @@ import {
 } from "https://deno.land/std@0.91.0/testing/asserts.ts";
 import { WorldApiClient } from "./world.ts";
 import { VRChatApiRepository } from "./repository.ts";
-import { BASE_URL, getAuthTokenFromEnv } from "./util.ts";
+import { BASE_URL, getApiKeyFromEnv, getAuthTokenFromEnv } from "./util.ts";
 
-const apiKey = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26";
+const apiKey = getApiKeyFromEnv();
 const authToken = getAuthTokenFromEnv();
 
 const repository = new VRChatApiRepository(BASE_URL, {
