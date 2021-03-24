@@ -15,10 +15,10 @@ if (username && password) {
 } else if (authToken) {
   const client = await loginWithAuthToken(authToken);
 
-  const currentUser = await client.user.getCurrentUser();
+  const currentUser = await client.currentUser.getCurrentUser();
   console.log(currentUser);
 
-  const friends = await client.user.getFriends();
+  const friends = await client.currentUser.getFriends();
   console.log(friends);
 
   const user = await client.user.getUserById(friends[0].id);

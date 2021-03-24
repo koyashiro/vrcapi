@@ -96,16 +96,9 @@ export interface ApiRepository {
   basicCredential?: BasicCredential;
   authCredential?: AuthCredential;
 
-  get<T>(
-    relativeUrl: string,
-    option?: Option,
-  ): Promise<T>;
+  get<T>(relativeUrl: string, option?: Option): Promise<T>;
 
-  post<T>(
-    relativeUrl: string,
-    body: unknown,
-    option?: Option,
-  ): Promise<T>;
+  post<T>(relativeUrl: string, body: unknown, option?: Option): Promise<T>;
 }
 
 export class VRChatApiRepository implements ApiRepository {
@@ -129,10 +122,7 @@ export class VRChatApiRepository implements ApiRepository {
     this.authCredential = credential?.authCredential;
   }
 
-  async get<T>(
-    relativeUrl: string,
-    option?: Option,
-  ): Promise<T> {
+  async get<T>(relativeUrl: string, option?: Option): Promise<T> {
     const url = createURL(relativeUrl, this.baseUrl, option?.params);
 
     const headers = createHeader(
