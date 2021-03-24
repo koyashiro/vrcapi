@@ -9,8 +9,10 @@ import { BASE_URL, getAuthTokenFromEnv } from "./util.ts";
 const apiKey = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26";
 const authToken = getAuthTokenFromEnv();
 
-const repository = new VRChatApiRepository(BASE_URL);
-const client = new WorldApiClient(apiKey, authToken, repository);
+const repository = new VRChatApiRepository(BASE_URL, {
+  authCredential: { apiKey, authToken },
+});
+const client = new WorldApiClient(repository);
 
 Deno.test("Get world by Id", async () => {
   // VRChat Home

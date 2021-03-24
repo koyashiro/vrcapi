@@ -99,65 +99,43 @@ enum ReleaseStatus {
 }
 
 export class WorldApiClient {
-  private readonly _apiKey: string;
-  private readonly _authToken: string;
-  private readonly _repository: ApiRepository;
+  readonly #repository: ApiRepository;
 
-  constructor(
-    apiKey: string,
-    authToken: string,
-    repository: ApiRepository,
-  ) {
-    this._apiKey = apiKey;
-    this._authToken = authToken;
-    this._repository = repository;
+  constructor(repository: ApiRepository) {
+    this.#repository = repository;
   }
 
   getWorldById(id: string): Promise<World> {
-    return this._repository.getWithAuthToken<World>(
-      `worlds/${id}`,
-      this._apiKey,
-      this._authToken,
-    );
+    return this.#repository.get<World>(`worlds/${id}`, { useAuth: true });
   }
 
   getAnyWorlds(): Promise<LimitedWorld[]> {
-    return this._repository.getWithAuthToken<LimitedWorld[]>(
-      "worlds",
-      this._apiKey,
-      this._authToken,
-    );
+    return this.#repository.get<LimitedWorld[]>("worlds", { useAuth: true });
   }
 
   getActiveWorlds(): Promise<LimitedWorld[]> {
-    return this._repository.getWithAuthToken<LimitedWorld[]>(
-      "worlds/active",
-      this._apiKey,
-      this._authToken,
-    );
+    return this.#repository.get<LimitedWorld[]>("worlds/active", {
+      useAuth: true,
+    });
   }
 
   getRecentWorlds(): Promise<LimitedWorld[]> {
-    return this._repository.getWithAuthToken<LimitedWorld[]>(
-      "worlds/recent",
-      this._apiKey,
-      this._authToken,
-    );
+    return this.#repository.get<LimitedWorld[]>("worlds/recent", {
+      useAuth: true,
+    });
   }
 
   getFavoriteWorlds(): Promise<LimitedWorld[]> {
-    return this._repository.getWithAuthToken<LimitedWorld[]>(
+    return this.#repository.get<LimitedWorld[]>(
       "worlds/favorites",
-      this._apiKey,
-      this._authToken,
+      { useAuth: true },
     );
   }
 
   getWorldMetadataById(id: string): Promise<WorldMetadata> {
-    return this._repository.getWithAuthToken<WorldMetadata>(
+    return this.#repository.get<WorldMetadata>(
       `worlds/${id}/metadata`,
-      this._apiKey,
-      this._authToken,
+      { useAuth: true },
     );
   }
 }

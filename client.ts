@@ -1,18 +1,21 @@
-import { ApiRepository } from "./repository.ts";
+import { ApiRepository, AuthCredential } from "./repository.ts";
 import { UserApiClient } from "./user.ts";
+import { WorldApiClient } from "./world.ts";
 
 export class VRChatApiClient {
-  readonly apiKey: string;
-  readonly authToken: string;
+  readonly authCredential: AuthCredential;
   readonly user: UserApiClient;
+  readonly world: WorldApiClient;
 
   constructor(
-    apiKey: string,
-    authToken: string,
     repository: ApiRepository,
   ) {
-    this.apiKey = apiKey;
-    this.authToken = authToken;
-    this.user = new UserApiClient(apiKey, authToken, repository);
+    if (!repository.authCredential) {
+      throw new Error("Invalid repository.");
+    }
+
+    this.authCredential = repository.authCredential;
+    this.user = new UserApiClient(repository);
+    this.world = new WorldApiClient(repository);
   }
 }

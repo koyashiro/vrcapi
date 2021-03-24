@@ -1,142 +1,219 @@
-import { getAuthToken, getBasicString } from "./util.ts";
+import { encode } from "https://deno.land/std/encoding/base64.ts";
+
+function getBasicString(username: string, password: string) {
+  const credential = encode(`${username}:${password}`);
+  return `Basic ${credential}`;
+}
+
+function getApiKey(cookie: string): string | null {
+  const result = cookie.match(/.*apiKey=(?<authToken>.*);.*/);
+  if (!result || !result.groups) {
+    return null;
+  }
+  return result.groups["authToken"];
+}
+
+function getAuthToken(cookie: string): string | null {
+  const result = cookie.match(/.*auth=(?<authToken>.*);.*/);
+  if (!result || !result.groups) {
+    return null;
+  }
+  return result.groups["authToken"];
+}
+
+function createCookie(apiKey: string, authToken: string): string {
+  return `apiKey=${apiKey};auth=${authToken}`;
+}
+
+function createHeader(
+  option?: Option,
+  basicCredential?: BasicCredential,
+  authCredential?: AuthCredential,
+): HeadersInit {
+  const headers = new Headers();
+
+  if (option?.useBasic) {
+    if (!basicCredential) {
+      throw new Error();
+    }
+
+    const basic = getBasicString(
+      basicCredential.username,
+      basicCredential.password,
+    );
+    headers.set("authorization", basic);
+  }
+
+  if (option?.useAuth) {
+    if (!authCredential) {
+      throw new Error();
+    }
+
+    const cookie = createCookie(
+      authCredential.apiKey,
+      authCredential.authToken,
+    );
+    headers.set("cookie", cookie);
+  }
+
+  return headers;
+}
+
+function createURL(
+  relativeUrl: string,
+  baseUrl: string | URL,
+  params?: Params,
+): URL {
+  const url = new URL(relativeUrl, baseUrl);
+
+  if (params) {
+    for (const [key, value] of params) {
+      url.searchParams.set(key, value ?? "");
+    }
+  }
+  return url;
+}
+
+export interface BasicCredential {
+  username: string;
+  password: string;
+}
+
+export interface AuthCredential {
+  apiKey: string;
+  authToken: string;
+}
+
+export type Params = Map<string, string | undefined>;
+
+export interface Option {
+  params?: Params;
+  useBasic?: boolean;
+  useAuth?: boolean;
+}
 
 export interface ApiRepository {
-  get<T>(relativeUrl: string): Promise<T>;
+  basicCredential?: BasicCredential;
+  authCredential?: AuthCredential;
 
-  getWithBasic<T>(
+  get<T>(
     relativeUrl: string,
-    apiKey: string,
-    username: string,
-    password: string,
-  ): Promise<[value: T, authToken: string]>;
-
-  postWithAuthToken<T>(
-    relativeUrl: string,
-    apiKey: string,
-    authToken: string,
-    body: string,
+    option?: Option,
   ): Promise<T>;
 
-  getWithAuthToken<T>(
+  post<T>(
     relativeUrl: string,
-    apiKey: string,
-    authToken: string,
+    body: unknown,
+    option?: Option,
   ): Promise<T>;
 }
 
 export class VRChatApiRepository implements ApiRepository {
+  basicCredential?: BasicCredential;
+  authCredential?: AuthCredential;
   readonly baseUrl: URL;
 
-  constructor(baseUrl: string | URL) {
+  constructor(
+    baseUrl: string | URL,
+    credential?: {
+      basicCredential?: BasicCredential;
+      authCredential?: AuthCredential;
+    },
+  ) {
     if (typeof baseUrl === "string") {
       this.baseUrl = new URL(baseUrl);
     } else {
       this.baseUrl = baseUrl;
     }
+    this.basicCredential = credential?.basicCredential;
+    this.authCredential = credential?.authCredential;
   }
 
-  async get<T>(relativeUrl: string): Promise<T> {
-    const url = new URL(relativeUrl, this.baseUrl);
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error("Response is not ok.");
-    }
-
-    const value = await response.json() as T;
-    return value;
-  }
-
-  async getWithBasic<T>(
+  async get<T>(
     relativeUrl: string,
-    apiKey: string,
-    username: string,
-    password: string,
-  ): Promise<[value: T, authToken: string]> {
-    const url = new URL(relativeUrl, this.baseUrl);
-    url.searchParams.append("apiKey", apiKey);
+    option?: Option,
+  ): Promise<T> {
+    const url = createURL(relativeUrl, this.baseUrl, option?.params);
 
-    const credential = getBasicString(username, password);
-    const basic = `Basic ${credential}`;
+    const headers = createHeader(
+      option,
+      this.basicCredential,
+      this.authCredential,
+    );
 
-    const headers = new Headers();
-    headers.set("authorization", basic);
-
-    const response = await fetch(url, {
+    const request: RequestInit = {
       method: "GET",
       headers,
-    });
-
-    if (!response.ok) {
-      throw new Error("Response is not ok.");
-    }
-
-    const value = await response.json() as T;
-
-    const cookie = response.headers.get("set-cookie");
-    if (!cookie) {
-      throw new Error("cookie is not exists.");
-    }
-
-    const authToken = getAuthToken(cookie);
-
-    return [value, authToken];
-  }
-
-  async postWithAuthToken<T>(
-    relativeUrl: string,
-    apiKey: string,
-    authToken: string,
-    body: string,
-  ): Promise<T> {
-    const url = new URL(relativeUrl, this.baseUrl);
-    url.searchParams.append("apiKey", apiKey);
-
-    const headers = new Headers();
-    headers.set("cookie", `auth=${authToken}`);
-    headers.set("content-type", "application/json");
-    headers.set("content-length", body.length.toString());
-
-    const request = {
-      method: "POST",
-      headers,
-      body,
     };
 
     const response = await fetch(url, request);
 
     if (!response.ok) {
       console.log(request);
-      console.log(response);
+      console.log(request);
       console.log(await response.json());
       throw new Error("Response is not ok.");
     }
 
-    const value = await response.json() as T;
-    return value;
+    if (!this.authCredential) {
+      const cookie = response.headers.get("set-cookie");
+      if (cookie) {
+        const apiKey = getApiKey(cookie);
+        const authToken = getAuthToken(cookie);
+        if (apiKey && authToken) {
+          this.authCredential = {
+            apiKey,
+            authToken,
+          };
+        }
+      }
+    }
+
+    return await response.json() as T;
   }
 
-  async getWithAuthToken<T>(
+  async post<T>(
     relativeUrl: string,
-    apiKey: string,
-    authToken: string,
+    body: unknown,
+    option?: Option,
   ): Promise<T> {
-    const url = new URL(relativeUrl, this.baseUrl);
-    url.searchParams.append("apiKey", apiKey);
+    const url = createURL(relativeUrl, this.baseUrl, option?.params);
 
-    const headers = new Headers();
-    headers.set("cookie", `auth=${authToken}`);
+    const headers = createHeader(
+      option,
+      this.basicCredential,
+      this.authCredential,
+    );
 
-    const response = await fetch(url, {
-      method: "GET",
+    const request: RequestInit = {
+      method: "POST",
       headers,
-    });
+      body: typeof body == "string" ? body : JSON.stringify(body),
+    };
+
+    const response = await fetch(url, request);
 
     if (!response.ok) {
+      console.log(request);
+      console.log(await response.json());
+      console.log(body);
       throw new Error("Response is not ok.");
     }
 
-    const value = await response.json() as T;
-    return value;
+    if (!this.authCredential) {
+      const cookie = response.headers.get("set-cookie");
+      if (cookie) {
+        const apiKey = getApiKey(cookie);
+        const authToken = getAuthToken(cookie);
+        if (apiKey && authToken) {
+          this.authCredential = {
+            apiKey,
+            authToken,
+          };
+        }
+      }
+    }
+
+    return await response.json() as T;
   }
 }

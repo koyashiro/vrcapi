@@ -111,47 +111,51 @@ export interface Verify {
   verified: boolean;
 }
 
-const repository = new VRChatApiRepository(BASE_URL);
-
 export async function login(
   username: string,
   password: string,
   code?: string,
 ) {
+  const repository = new VRChatApiRepository(BASE_URL, {
+    basicCredential: { username, password },
+  });
+
   const config = await repository.get<Config>("config");
   const apiKey = config.apiKey;
 
-  const [currentUser, authToken] = await repository.getWithBasic<
-    CurrentUser
-  >(
-    "auth/user",
-    apiKey,
-    username,
-    password,
-  );
+  const params = new Map<string, string | undefined>();
+  params.set("apiKey", apiKey);
+
+  const currentUser = await repository.get<CurrentUser>("auth/user", {
+    useBasic: true,
+    params,
+  });
 
   if (currentUser.requiresTwoFactorAuth) {
     if (!code) {
       throw new Error("Require Two-Factor Authentication.");
     }
 
-    const verify = await repository.postWithAuthToken<Verify>(
+    const verify = await repository.post<Verify>(
       "auth/twofactorauth/totp/verify",
-      apiKey,
-      authToken,
-      JSON.stringify({ code }),
+      { code },
+      { useAuth: true },
     );
     if (!verify.verified) {
       throw new Error("Two-Factor Authentication error.");
     }
   }
 
-  return new VRChatApiClient(apiKey, authToken, repository);
+  return new VRChatApiClient(repository);
 }
 
 export const loginWithAuthToken = async (authToken: string) => {
+  const repository = new VRChatApiRepository(BASE_URL);
+
   const config = await repository.get<Config>("config");
   const apiKey = config.apiKey;
 
-  return new VRChatApiClient(apiKey, authToken, repository);
+  repository.authCredential = { apiKey, authToken };
+
+  return new VRChatApiClient(repository);
 };

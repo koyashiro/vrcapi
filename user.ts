@@ -101,41 +101,21 @@ enum DevelopperType {
 }
 
 export class UserApiClient {
-  private readonly _apiKey: string;
-  private readonly _authToken: string;
-  private readonly _repository: ApiRepository;
+  readonly #repository: ApiRepository;
 
-  constructor(
-    apiKey: string,
-    authToken: string,
-    repository: ApiRepository,
-  ) {
-    this._apiKey = apiKey;
-    this._authToken = authToken;
-    this._repository = repository;
-  }
-
-  getCurrentUser(): Promise<CurrentUser> {
-    return this._repository.getWithAuthToken<CurrentUser>(
-      "auth/user",
-      this._apiKey!,
-      this._authToken!,
-    );
+  constructor(repository: ApiRepository) {
+    this.#repository = repository;
   }
 
   getUserById(id: string): Promise<User> {
-    return this._repository.getWithAuthToken<User>(
-      `users/${id}`,
-      this._apiKey!,
-      this._authToken!,
-    );
+    return this.#repository.get<User>(`users/${id}`, { useAuth: true });
+  }
+
+  getCurrentUser(): Promise<CurrentUser> {
+    return this.#repository.get<CurrentUser>("auth/user", { useAuth: true });
   }
 
   getFriends(): Promise<User[]> {
-    return this._repository.getWithAuthToken<User[]>(
-      "auth/user/friends",
-      this._apiKey!,
-      this._authToken!,
-    );
+    return this.#repository.get<User[]>("auth/user/friends", { useAuth: true });
   }
 }

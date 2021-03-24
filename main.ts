@@ -10,8 +10,7 @@ const authToken = args["auth-token"];
 
 if (username && password) {
   const client = await login(username, password, code);
-
-  console.log(`auth token: ${client.authToken}`);
+  console.log(`auth token: ${client.authCredential}`);
   Deno.exit(0);
 } else if (authToken) {
   const client = await loginWithAuthToken(authToken);
