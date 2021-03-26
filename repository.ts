@@ -27,19 +27,14 @@ function createCookie(apiKey: string, authToken: string): string {
 
 function createHeader(
   option?: Option,
-  basicCredential?: BasicCredential,
   authCredential?: AuthCredential,
 ): HeadersInit {
   const headers = new Headers();
 
-  if (option?.useBasic) {
-    if (!basicCredential) {
-      throw new Error();
-    }
-
+  if (option?.basic) {
     const basic = getBasicString(
-      basicCredential.username,
-      basicCredential.password,
+      option.basic.username,
+      option.basic.password,
     );
     headers.set("authorization", basic);
   }
@@ -88,12 +83,11 @@ export type Params = Map<string, string | undefined>;
 
 export interface Option {
   params?: Params;
-  useBasic?: boolean;
+  basic?: BasicCredential;
   useAuth?: boolean;
 }
 
 export interface ApiRepository {
-  basicCredential?: BasicCredential;
   authCredential?: AuthCredential;
 
   get<T>(relativeUrl: string, option?: Option): Promise<T>;
@@ -102,14 +96,12 @@ export interface ApiRepository {
 }
 
 export class VRChatApiRepository implements ApiRepository {
-  basicCredential?: BasicCredential;
   authCredential?: AuthCredential;
   readonly baseUrl: URL;
 
   constructor(
     baseUrl: string | URL,
     credential?: {
-      basicCredential?: BasicCredential;
       authCredential?: AuthCredential;
     },
   ) {
@@ -118,7 +110,6 @@ export class VRChatApiRepository implements ApiRepository {
     } else {
       this.baseUrl = baseUrl;
     }
-    this.basicCredential = credential?.basicCredential;
     this.authCredential = credential?.authCredential;
   }
 
@@ -127,7 +118,6 @@ export class VRChatApiRepository implements ApiRepository {
 
     const headers = createHeader(
       option,
-      this.basicCredential,
       this.authCredential,
     );
 
@@ -171,7 +161,6 @@ export class VRChatApiRepository implements ApiRepository {
 
     const headers = createHeader(
       option,
-      this.basicCredential,
       this.authCredential,
     );
 

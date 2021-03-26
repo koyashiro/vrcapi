@@ -24,8 +24,4 @@ export class VRChatApiClient {
   get authCredential() {
     return this.#repository.authCredential;
   }
-
-  get basicCredential() {
-    return this.#repository.basicCredential;
-  }
 }
