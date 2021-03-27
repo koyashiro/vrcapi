@@ -6,11 +6,11 @@ function getBasicString(username: string, password: string) {
 }
 
 function getApiKey(cookie: string): string | null {
-  const result = cookie.match(/.*apiKey=(?<authToken>.*);.*/);
+  const result = cookie.match(/.*apiKey=(?<apiKey>.*);.*/);
   if (!result || !result.groups) {
     return null;
   }
-  return result.groups["authToken"];
+  return result.groups["apiKey"];
 }
 
 function getAuthToken(cookie: string): string | null {
