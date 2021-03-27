@@ -58,29 +58,65 @@ Deno.test("Environment", () => {
 });
 
 Deno.test("get api key from env", () => {
+  const originApiKey = Deno.env.get(env.Environment.ApiKey);
+
   const expectedApiKey = "expectedapikey";
   Deno.env.set(env.Environment.ApiKey, expectedApiKey);
   const actualApiKey = env.getApiKeyFromEnv();
-  assertEquals(actualApiKey, expectedApiKey);
+
+  try {
+    assertEquals(actualApiKey, expectedApiKey);
+  } finally {
+    if (originApiKey) {
+      Deno.env.set(env.Environment.ApiKey, originApiKey);
+    }
+  }
 });
 
 Deno.test("get auth token from env", () => {
+  const originAuthToken = Deno.env.get(env.Environment.AuthToken);
+
   const expectedAuthToken = "authcookie_00000000-0000-0000-0000-000000000000";
   Deno.env.set(env.Environment.AuthToken, expectedAuthToken);
   const actualAuthToken = env.getAuthTokenFromEnv();
-  assertEquals(actualAuthToken, expectedAuthToken);
+
+  try {
+    assertEquals(actualAuthToken, expectedAuthToken);
+  } finally {
+    if (originAuthToken) {
+      Deno.env.set(env.Environment.AuthToken, originAuthToken);
+    }
+  }
 });
 
 Deno.test("get username from env", () => {
+  const originUsername = Deno.env.get(env.Environment.Username);
+
   const expectedUsername = "username";
   Deno.env.set(env.Environment.Username, expectedUsername);
   const actualUsername = env.getUsernameFromEnv();
-  assertEquals(expectedUsername, actualUsername);
+
+  try {
+    assertEquals(expectedUsername, actualUsername);
+  } finally {
+    if (originUsername) {
+      Deno.env.set(env.Environment.Username, originUsername);
+    }
+  }
 });
 
 Deno.test("get password from env", () => {
+  const originPassword = Deno.env.get(env.Environment.Password);
+
   const expectedPassword = "password";
   Deno.env.set(env.Environment.Password, expectedPassword);
   const actualPassword = env.getPasswordFromEnv();
-  assertEquals(expectedPassword, actualPassword);
+
+  try {
+    assertEquals(expectedPassword, actualPassword);
+  } finally {
+    if (originPassword) {
+      Deno.env.set(env.Environment.Password, originPassword);
+    }
+  }
 });
