@@ -4,12 +4,11 @@ import { BASE_URL } from "./common.ts";
 import { VRChatApiRepository } from "./repository.ts";
 import * as config from "./config.ts";
 
-const expectedMembers = [
-  "ConfigApiClient",
-];
-const actualMembers = Object.keys(config);
-
 Deno.test("Export members", () => {
+  const expectedMembers = [
+    "ConfigApiClient",
+  ];
+  const actualMembers = Object.keys(config);
   assertExportMembers("config", expectedMembers, actualMembers);
 });
 

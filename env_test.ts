@@ -16,18 +16,6 @@ Deno.test("Export members", () => {
   ];
 
   assertExportMembers("env", actualMembers, expectedMembers);
-
-  for (const expectedMember of expectedMembers) {
-    if (!actualMembers.includes(expectedMember)) {
-      fail(`env doesn't export \`${expectedMember}\` which is expected..`);
-    }
-  }
-
-  for (const actualMember of actualMembers) {
-    if (!expectedMembers.includes(actualMember)) {
-      fail(`env export \`${actualMember}\` which is not expected.`);
-    }
-  }
 });
 
 Deno.test("Environment", () => {
