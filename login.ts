@@ -1,8 +1,8 @@
+import { BASE_URL } from "./common.ts";
 import { ApiRepository, VRChatApiRepository } from "./repository.ts";
 import { VRChatApiClient } from "./client.ts";
-import { Config, ConfigApiClient } from "./config.ts";
 import { CurrentUser } from "./current_user.ts";
-import { BASE_URL } from "./util.ts";
+import { getApiKey } from "./util.ts";
 
 export interface Verify {
   verified: boolean;
@@ -94,11 +94,4 @@ export async function loginWithAuthToken(
   }
 
   return new VRChatApiClient(repository);
-}
-
-async function getApiKey(): Promise<string> {
-  const repository = new VRChatApiRepository(BASE_URL);
-  const configClient = new ConfigApiClient(repository);
-  const config = await configClient.getConfig() as Config;
-  return config.clientApiKey;
 }
