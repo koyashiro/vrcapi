@@ -1,5 +1,7 @@
 # vrcapi
 
+VRChat API wrapper in Deno🦕.
+
 ## Usage
 
 ```typescript
