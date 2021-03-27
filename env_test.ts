@@ -5,7 +5,7 @@ import {
 import { assertExportMembers } from "./test_util.ts";
 import * as env from "./env.ts";
 
-Deno.test("export members", () => {
+Deno.test("Export members", () => {
   const actualMembers = Object.keys(env);
   const expectedMembers = [
     "Environment",
