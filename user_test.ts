@@ -1,7 +1,8 @@
 import { assertEquals } from "https://deno.land/std@0.91.0/testing/asserts.ts";
+import { BASE_URL } from "./common.ts";
+import { getApiKeyFromEnv, getAuthTokenFromEnv } from "./env.ts";
 import { UserApiClient } from "./user.ts";
 import { VRChatApiRepository } from "./repository.ts";
-import { BASE_URL, getApiKeyFromEnv, getAuthTokenFromEnv } from "./util.ts";
 
 const apiKey = getApiKeyFromEnv();
 const authToken = getAuthTokenFromEnv();
