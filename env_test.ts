@@ -4,9 +4,11 @@ import {
   assertEquals,
   fail,
 } from "https://deno.land/std@0.91.0/testing/asserts.ts";
+import { assertExportMembers } from "./test_util.ts";
 import * as env from "./env.ts";
 
 Deno.test("export members", () => {
+  const actualMembers = Object.keys(env);
   const expectedMembers = [
     "Environment",
     "getApiKeyFromEnv",
@@ -15,7 +17,7 @@ Deno.test("export members", () => {
     "getPasswordFromEnv",
   ];
 
-  const actualMembers = Object.keys(env);
+  assertExportMembers("env", actualMembers, expectedMembers);
 
   for (const expectedMember of expectedMembers) {
     if (!actualMembers.includes(expectedMember)) {
