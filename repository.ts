@@ -62,7 +62,8 @@ function createURL(
   const url = new URL(relativeUrl, baseUrl);
 
   if (params) {
-    for (const [key, value] of params) {
+    for (const key in params) {
+      const value = params[key];
       url.searchParams.set(key, value ?? "");
     }
   }
@@ -79,7 +80,9 @@ export interface AuthCredential {
   authToken: string;
 }
 
-export type Params = Map<string, string | undefined>;
+export type Params = {
+  [key: string]: string | null;
+};
 
 export interface Option {
   params?: Params;

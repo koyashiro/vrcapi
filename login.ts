@@ -15,9 +15,14 @@ export class LoginClient {
     this.#repository = repository;
   }
 
-  getUserWithBasic(username: string, password: string): Promise<CurrentUser> {
+  getUserWithBasic(
+    username: string,
+    password: string,
+    apiKey: string,
+  ): Promise<CurrentUser> {
     return this.#repository.get<CurrentUser>("auth/user", {
       basic: { username, password },
+      params: { apiKey },
     });
   }
 
@@ -45,10 +50,11 @@ export async function login(
 
   const apiKey = await getApiKey();
 
-  const params = new Map<string, string | undefined>();
-  params.set("apiKey", apiKey);
-
-  const currentUser = await loginClient.getUserWithBasic(username, password);
+  const currentUser = await loginClient.getUserWithBasic(
+    username,
+    password,
+    apiKey,
+  );
 
   if (currentUser.requiresTwoFactorAuth) {
     if (!code) {
