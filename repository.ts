@@ -72,6 +72,33 @@ function createURL(
   return url;
 }
 
+export interface RepositoryInit {
+  readonly baseUrl: URL;
+
+  // deno-lint-ignore no-explicit-any
+  get(relativeUrl: string, params?: Params): Promise<any>;
+}
+
+export class Repository implements RepositoryInit {
+  readonly baseUrl: URL;
+
+  constructor(baseUrl: string | URL) {
+    if (typeof baseUrl === "string") {
+      this.baseUrl = new URL(baseUrl);
+    } else {
+      this.baseUrl = baseUrl;
+    }
+  }
+
+  // deno-lint-ignore no-explicit-any
+  async get(relativeUrl: string, params?: Params): Promise<any> {
+    const url = createURL(relativeUrl, this.baseUrl, params);
+    const request: RequestInit = { method: "GET" };
+    const response = await fetch(url, request);
+    return await response.json();
+  }
+}
+
 export interface BasicRepositoryInit {
   readonly baseUrl: URL;
   readonly credential: BasicCredential;
