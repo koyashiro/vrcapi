@@ -1,53 +1,56 @@
 import { encode } from "https://deno.land/std/encoding/base64.ts";
 
-function getBasicString(username: string, password: string) {
+export interface BasicCredential {
+  username: string;
+  password: string;
+}
+
+export interface AuthCredential {
+  apiKey: string;
+  authToken: string;
+}
+
+type Credential = AuthCredential | BasicCredential;
+
+export type Params = {
+  [key: string]: string | null;
+};
+
+function extractAuthCredential(cookie: string): AuthCredential | null {
+  let result = cookie.match(/.*apiKey=(?<apiKey>.*);.*/);
+  if (!result || !result.groups) {
+    return null;
+  }
+  const apiKey = result.groups["apiKey"];
+
+  result = cookie.match(/.*auth=(?<authToken>.*);.*/);
+  if (!result || !result.groups) {
+    return null;
+  }
+  const authToken = result.groups["authToken"];
+
+  return { apiKey, authToken };
+}
+
+function createBasicString(username: string, password: string) {
   const credential = encode(`${username}:${password}`);
   return `Basic ${credential}`;
 }
 
-function getApiKey(cookie: string): string | null {
-  const result = cookie.match(/.*apiKey=(?<apiKey>.*);.*/);
-  if (!result || !result.groups) {
-    return null;
-  }
-  return result.groups["apiKey"];
-}
-
-function getAuthToken(cookie: string): string | null {
-  const result = cookie.match(/.*auth=(?<authToken>.*);.*/);
-  if (!result || !result.groups) {
-    return null;
-  }
-  return result.groups["authToken"];
-}
-
 function createCookie(apiKey: string, authToken: string): string {
-  return `apiKey=${apiKey};auth=${authToken}`;
+  return `apiKey=${apiKey};authCredential=${authToken}`;
 }
 
-function createHeader(
-  option?: Option,
-  authCredential?: AuthCredential,
-): HeadersInit {
+function createHeader(credential: Credential): HeadersInit {
   const headers = new Headers();
 
-  if (option?.basic) {
-    const basic = getBasicString(
-      option.basic.username,
-      option.basic.password,
-    );
+  if ("username" in credential) {
+    const basic = createBasicString(credential.username, credential.password);
     headers.set("authorization", basic);
   }
 
-  if (option?.useAuth) {
-    if (!authCredential) {
-      throw new Error();
-    }
-
-    const cookie = createCookie(
-      authCredential.apiKey,
-      authCredential.authToken,
-    );
+  if ("authToken" in credential) {
+    const cookie = createCookie(credential.apiKey, credential.authToken);
     headers.set("cookie", cookie);
   }
 
@@ -60,7 +63,6 @@ function createURL(
   params?: Params,
 ): URL {
   const url = new URL(relativeUrl, baseUrl);
-
   if (params) {
     for (const key in params) {
       const value = params[key];
@@ -70,132 +72,118 @@ function createURL(
   return url;
 }
 
-export interface BasicCredential {
-  username: string;
-  password: string;
-}
-
-export interface AuthCredential {
-  apiKey: string;
-  authToken: string;
-}
-
-export type Params = {
-  [key: string]: string | null;
-};
-
-export interface Option {
-  params?: Params;
-  basic?: BasicCredential;
-  useAuth?: boolean;
-}
-
-export interface ApiRepository {
-  authCredential?: AuthCredential;
-
-  get<T>(relativeUrl: string, option?: Option): Promise<T>;
-
-  post<T>(relativeUrl: string, body: unknown, option?: Option): Promise<T>;
-}
-
-export class VRChatApiRepository implements ApiRepository {
-  authCredential?: AuthCredential;
+export interface BasicRepositoryInit {
   readonly baseUrl: URL;
+  readonly credential: BasicCredential;
 
-  constructor(
-    baseUrl: string | URL,
-    credential?: {
-      authCredential?: AuthCredential;
-    },
-  ) {
+  get(relativeUrl: string, params?: Params): Promise<AuthCredential>;
+}
+
+export class BasicRepository implements BasicRepositoryInit {
+  readonly baseUrl: URL;
+  readonly credential: BasicCredential;
+
+  constructor(baseUrl: string | URL, credential: BasicCredential) {
     if (typeof baseUrl === "string") {
       this.baseUrl = new URL(baseUrl);
     } else {
       this.baseUrl = baseUrl;
     }
-    this.authCredential = credential?.authCredential;
+    this.credential = credential;
   }
 
-  async get<T>(relativeUrl: string, option?: Option): Promise<T> {
-    const url = createURL(relativeUrl, this.baseUrl, option?.params);
-
-    const headers = createHeader(
-      option,
-      this.authCredential,
-    );
-
-    const request: RequestInit = {
-      method: "GET",
-      headers,
-    };
-
+  async get(relativeUrl: string, params?: Params): Promise<AuthCredential> {
+    const url = createURL(relativeUrl, this.baseUrl, params);
+    const headers = createHeader(this.credential);
+    const request: RequestInit = { method: "GET", headers };
     const response = await fetch(url, request);
-
+    const body = await response.json();
     if (!response.ok) {
-      console.log(request);
-      console.log(request);
-      console.log(await response.json());
-      throw new Error("Response is not ok.");
-    }
-
-    if (!this.authCredential) {
-      const cookie = response.headers.get("set-cookie");
-      if (cookie) {
-        const apiKey = getApiKey(cookie);
-        const authToken = getAuthToken(cookie);
-        if (apiKey && authToken) {
-          this.authCredential = {
-            apiKey,
-            authToken,
-          };
-        }
+      if ("error" in body && "message" in body.error) {
+        throw new Error(body.error.message);
+      } else {
+        throw new Error(response.statusText);
       }
     }
+    const cookie = response.headers.get("set-cookie");
+    if (!cookie) {
+      throw new Error("Invalid cookie");
+    }
+    const authCredential = extractAuthCredential(cookie);
+    if (!authCredential) {
+      throw new Error("Invalid cookie");
+    }
+    return authCredential;
+  }
+}
 
-    return await response.json() as T;
+export interface AuthRepositoryInit {
+  readonly baseUrl: URL;
+  readonly credential: AuthCredential;
+
+  // deno-lint-ignore no-explicit-any
+  get(relativeUrl: string, params?: Params): Promise<any>;
+
+  // deno-lint-ignore no-explicit-any
+  post(relativeUrl: string, body: unknown, params?: Params): Promise<any>;
+
+  // deno-lint-ignore no-explicit-any
+  put(relativeUrl: string, body: unknown, params?: Params): Promise<any>;
+}
+
+export class AuthRepository implements AuthRepositoryInit {
+  readonly baseUrl: URL;
+  readonly credential: AuthCredential;
+
+  constructor(baseUrl: string | URL, credential: AuthCredential) {
+    if (typeof baseUrl === "string") {
+      this.baseUrl = new URL(baseUrl);
+    } else {
+      this.baseUrl = baseUrl;
+    }
+    this.credential = credential;
   }
 
-  async post<T>(
+  // deno-lint-ignore no-explicit-any
+  async get(relativeUrl: string, params?: Params): Promise<any> {
+    const url = createURL(relativeUrl, this.baseUrl, params);
+    const headers = createHeader(this.credential);
+    const request: RequestInit = { method: "GET", headers };
+    const response = await fetch(url, request);
+    return await response.json();
+  }
+
+  async post(
     relativeUrl: string,
     body: unknown,
-    option?: Option,
-  ): Promise<T> {
-    const url = createURL(relativeUrl, this.baseUrl, option?.params);
-
-    const headers = createHeader(
-      option,
-      this.authCredential,
-    );
-
+    params?: Params,
+    // deno-lint-ignore no-explicit-any
+  ): Promise<any> {
+    const url = createURL(relativeUrl, this.baseUrl, params);
+    const headers = createHeader(this.credential);
     const request: RequestInit = {
       method: "POST",
       headers,
-      body: typeof body == "string" ? body : JSON.stringify(body),
+      body: JSON.stringify(body),
     };
-
     const response = await fetch(url, request);
+    return await response.json();
+  }
 
-    if (!response.ok) {
-      console.log(request);
-      console.log(await response.json());
-      console.log(body);
-      throw new Error("Response is not ok.");
-    }
-
-    if (!this.authCredential) {
-      const cookie = response.headers.get("set-cookie");
-      if (cookie) {
-        const apiKey = getApiKey(cookie);
-        const authToken = getAuthToken(cookie);
-        if (apiKey && authToken) {
-          this.authCredential = {
-            apiKey,
-            authToken,
-          };
-        }
-      }
-    }
-
-    return await response.json() as T;
+  async put(
+    relativeUrl: string,
+    body?: unknown,
+    params?: Params,
+    // deno-lint-ignore no-explicit-any
+  ): Promise<any> {
+    const url = createURL(relativeUrl, this.baseUrl, params);
+    const headers = createHeader(this.credential);
+    const request: RequestInit = {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+    };
+    const response = await fetch(url, request);
+    return response.json();
   }
 }
