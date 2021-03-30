@@ -1,4 +1,4 @@
-import { ApiRepository } from "./repository.ts";
+import { RepositoryInit } from "./repository.ts";
 
 export interface Config {
   messageOfTheDay: string;
@@ -104,14 +104,18 @@ export interface Config {
   apiKey: string;
 }
 
-export class ConfigApiClient {
-  readonly #repository: ApiRepository;
+export interface ConfigApiInit {
+  getConfig(): Promise<Config>;
+}
 
-  constructor(repository: ApiRepository) {
+export class ConfigApi {
+  readonly #repository: RepositoryInit;
+
+  constructor(repository: RepositoryInit) {
     this.#repository = repository;
   }
 
   getConfig(): Promise<Config> {
-    return this.#repository.get<Config>("config");
+    return this.#repository.get("config");
   }
 }
